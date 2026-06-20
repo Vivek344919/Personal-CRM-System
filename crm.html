@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal CRM</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+
+  /* NAV */
+  nav { background: #fff; border-bottom: 1px solid #e5e5e2; padding: 0 24px; display: flex; align-items: center; height: 52px; gap: 8px; }
+  nav .brand { font-weight: 600; font-size: 15px; margin-right: auto; }
+  nav button { background: none; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; color: #555; }
+  nav button.active { background: #f0f0ee; color: #111; font-weight: 500; }
+
+  /* LAYOUT */
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+
+  /* STAT CARDS */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: #eeeeed; border-radius: 10px; padding: 16px; }
+  .stat small { font-size: 12px; color: #777; display: block; margin-bottom: 6px; }
+  .stat span { font-size: 26px; font-weight: 600; }
+
+  /* SECTION CARD */
+  .card { background: #fff; border: 1px solid #e5e5e2; border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 14px; }
+
+  /* CONTACT ROW */
+  .contact-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; cursor: pointer; }
+  .contact-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .contact-row:hover { opacity: 0.75; }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-info strong { font-size: 14px; display: block; }
+  .contact-info small { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .contact-row .time { font-size: 12px; color: #aaa; white-space: nowrap; }
+
+  /* AVATAR */
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0; }
+
+  /* TAGS */
+  .tag { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 100px; display: inline-block; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input, .toolbar select { flex: 1; min-width: 130px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; background: #fff; outline: none; }
+  .toolbar input:focus, .toolbar select:focus { border-color: #aaa; }
+  .btn { padding: 8px 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: #f5f5f3; }
+  .btn-primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { color: #c0392b; border-color: #e8b4b1; }
+  .btn-danger:hover { background: #fdf2f2; }
+
+  /* DETAIL VIEW */
+  .detail-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .detail-header .avatar { width: 52px; height: 52px; font-size: 17px; }
+  .detail-header h2 { font-size: 20px; margin-bottom: 2px; }
+  .detail-header p { font-size: 13px; color: #666; margin-bottom: 6px; }
+  .detail-actions { display: flex; gap: 6px; margin-left: auto; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 14px; border-top: 1px solid #f0f0ee; margin-top: 4px; }
+  .detail-field small { font-size: 11px; color: #999; display: block; margin-bottom: 2px; }
+  .detail-field span { font-size: 13px; font-weight: 500; }
+  .notes-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0ee; }
+  .notes-box small { font-size: 11px; color: #999; display: block; margin-bottom: 4px; }
+  .notes-box p { font-size: 13px; line-height: 1.6; }
+
+  /* INTERACTIONS */
+  .interaction { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f5f5f3; }
+  .interaction:last-child { border-bottom: none; }
+  .itype { background: #f0f0ee; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 500; color: #555; white-space: nowrap; height: fit-content; }
+  .itext strong { font-size: 13px; display: block; }
+  .itext small { font-size: 11px; color: #aaa; }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 14px; border: 1px solid #e5e5e2; width: min(540px, 95vw); max-height: 90vh; overflow-y: auto; padding: 24px; position: relative; }
+  .modal h3 { font-size: 16px; margin-bottom: 18px; }
+  .modal .close { position: absolute; top: 14px; right: 14px; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; line-height: 1; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; resize: vertical; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #aaa; }
+  .form-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 6px; }
+
+  /* ALERT */
+  .alert { background: #fdf2f2; border: 1px solid #e8b4b1; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #c0392b; }
+  .empty { text-align: center; padding: 40px; font-size: 14px; color: #aaa; }
+
+  .back-btn { background: none; border: none; font-size: 13px; color: #666; cursor: pointer; margin-bottom: 14px; padding: 0; display: flex; align-items: center; gap: 4px; }
+  .back-btn:hover { color: #111; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">My CRM</span>
+  <button id="nav-dashboard" class="active" onclick="showView('dashboard')">Dashboard</button>
+  <button id="nav-contacts" onclick="showView('contacts')">Contacts</button>
+</nav>
+
+<main>
+  <div id="view-dashboard"></div>
+  <div id="view-contacts" style="display:none"></div>
+  <div id="view-detail" style="display:none"></div>
+</main>
+
+<!-- Contact Modal -->
+<div class="overlay" id="modal-contact">
+  <div class="modal">
+    <button class="close" onclick="closeModal('modal-contact')">&times;</button>
+    <h3 id="modal-contact-title">Add contact</h3>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Name *</label>
+        <input id="f-name" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input id="f-email" type="email" placeholder="email@example.com">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input id="f-phone" placeholder="+91 ...">
+      </div>
+      <div class="form-group">
+        <label>Company</label>
+        <input id="f-company" placeholder="Acme Corp">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <input id="f-role" placeholder="Engineer">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Birthday</label>
+        <input id="f-birthday" type="date">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Tags <span style="color:#bbb">(comma-separated: friend, work, mentor…)</span></label>
+        <input id="f-tags" placeholder="friend, work">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="f-notes" rows="3" placeholder="How you met, things to remember…"></textarea>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn" onclick="closeModal('modal-contact')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContact()">Save contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Interaction Modal -->
+<div class="overlay" id="modal-interaction">
+  <div class="modal" style="max-width:400px">
+    <button class="close" onclick="closeModal('modal-interaction')">&times;</button>
+    <h3>Log interaction</h3>
+    <input type="hidden" id="i-contact-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="i-type">
+          <option>call</option><option>email</option><option>meeting</option>
+          <option>coffee</option><option>message</option><option>other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input id="i-date" type="date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="i-note" rows="3" placeholder="What did you talk about?"></textarea>
+    </div>
+    <div class="form-footer">
+      <button class="btn" onclick="closeModal('modal-interaction')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInteraction()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SAMPLE = [
+  { id:"1", name:"Priya Sharma", email:"priya@example.com", phone:"+91 98765 43210", company:"Tata Consultancy", role:"Senior Engineer", tags:["work","mentor"], notes:"Met at TechConf 2024. Expertise in distributed systems.", lastContact:"2026-06-10", birthday:"1990-03-15", interactions:[{date:"2026-06-10",type:"call",note:"Discussed career growth"},{date:"2026-05-01",type:"coffee",note:"Caught up over chai"}] },
+  { id:"2", name:"Arjun Mehta", email:"arjun@startup.io", phone:"+91 87654 32109", company:"Finova", role:"Co-founder", tags:["friend","lead"], notes:"College batchmate. Looking for partnerships.", lastContact:"2026-06-15", birthday:"1992-07-22", interactions:[{date:"2026-06-15",type:"message",note:"WhatsApp catch up"}] },
+  { id:"3", name:"Neha Gupta", email:"neha.g@corp.com", phone:"+91 76543 21098", company:"Infosys", role:"Product Manager", tags:["work","client"], notes:"Key contact for the enterprise deal.", lastContact:"2026-06-01", birthday:"1988-11-05", interactions:[{date:"2026-06-01",type:"meeting",note:"Product roadmap review"}] },
+  { id:"4", name:"Ravi Krishnan", email:"ravi@personal.com", phone:"+91 65432 10987", company:"Freelance", role:"Designer", tags:["friend"], notes:"Creative genius. Collaborate on side projects.", lastContact:"2026-04-10", birthday:"1993-01-30", interactions:[] },
+];
+
+const AVATAR_COLORS = [
+  {bg:"#dbeafe",fg:"#1e40af"},{bg:"#dcfce7",fg:"#166534"},{bg:"#fef3c7",fg:"#92400e"},
+  {bg:"#fce7f3",fg:"#9d174d"},{bg:"#ede9fe",fg:"#5b21b6"},{bg:"#fee2e2",fg:"#991b1b"},
+];
+const TAG_COLORS = {
+  friend:{bg:"#dcfce7",fg:"#166534"}, work:{bg:"#dbeafe",fg:"#1e40af"},
+  family:{bg:"#fef3c7",fg:"#92400e"}, mentor:{bg:"#ede9fe",fg:"#5b21b6"},
+  client:{bg:"#fee2e2",fg:"#991b1b"}, lead:{bg:"#fce7f3",fg:"#9d174d"},
+};
+
+function loadContacts() {
+  try { const d = localStorage.getItem("crm_contacts"); return d ? JSON.parse(d) : SAMPLE; }
+  catch { return SAMPLE; }
+}
+function saveContacts(cs) {
+  try { localStorage.setItem("crm_contacts", JSON.stringify(cs)); } catch {}
+}
+
+let contacts = loadContacts();
+let currentView = "dashboard";
+let selectedId = null;
+let confirmingDelete = false;
+let searchQ = "";
+let filterTag = "all";
+let sortBy = "name";
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function initials(name) { return name.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2); }
+function avatarColor(name) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
+function timeAgo(d) {
+  if (!d) return "Never";
+  const days = Math.floor((Date.now() - new Date(d)) / 86400000);
+  if (days === 0) return "Today"; if (days === 1) return "Yesterday";
+  if (days < 30) return days+"d ago"; if (days < 365) return Math.floor(days/30)+"mo ago";
+  return Math.floor(days/365)+"y ago";
+}
+function formatDate(d) { return d ? new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—"; }
+function formatBday(d) { return d ? new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"long"}) : "—"; }
+function tagHtml(t) {
+  const c = TAG_COLORS[t] || {bg:"#f0f0ee",fg:"#555"};
+  return `<span class="tag" style="background:${c.bg};color:${c.fg}">${t}</span>`;
+}
+function avatarHtml(name, size=36) {
+  const c = avatarColor(name);
+  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${c.bg};color:${c.fg};font-size:${Math.round(size*0.35)}px">${initials(name)}</div>`;
+}
+function neglected() {
+  return contacts.filter(c => { if(!c.lastContact) return true; return (Date.now()-new Date(c.lastContact))/86400000 > 30; });
+}
+function upcomingBdays() {
+  return contacts.filter(c => {
+    if (!c.birthday) return false;
+    const b = new Date(c.birthday), now = new Date();
+    const next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
+    const diff = (next - now) / 86400000;
+    return diff >= 0 && diff <= 30;
+  });
+}
+function allTags() { return [...new Set(contacts.flatMap(c => c.tags||[]))]; }
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function showView(v) {
+  currentView = v; selectedId = null; confirmingDelete = false;
+  ["dashboard","contacts","detail"].forEach(x => {
+    document.getElementById("view-"+x).style.display = "none";
+    const btn = document.getElementById("nav-"+x);
+    if (btn) btn.classList.remove("active");
+  });
+  document.getElementById("view-"+v).style.display = "";
+  const navBtn = document.getElementById("nav-"+v);
+  if (navBtn) navBtn.classList.add("active");
+  if (v === "dashboard") renderDashboard();
+  if (v === "contacts") renderContacts();
+}
+
+function renderDashboard() {
+  const neg = neglected(), bdays = upcomingBdays();
+  let html = `<div class="stats">
+    <div class="stat"><small>Total contacts</small><span>${contacts.length}</span></div>
+    <div class="stat"><small>Need follow-up</small><span>${neg.length}</span></div>
+    <div class="stat"><small>Upcoming birthdays</small><span>${bdays.length}</span></div>
+    <div class="stat"><small>Tags</small><span>${allTags().length}</span></div>
+  </div>`;
+
+  if (neg.length) {
+    html += `<div class="card"><h3>⏰ Haven't talked in 30+ days</h3>`;
+    neg.slice(0,5).forEach(c => {
+      html += `<div class="contact-row" onclick="openContact('${c.id}')">
+        ${avatarHtml(c.name)} <div class="contact-info"><strong>${c.name}</strong><small>${c.company||""}</small></div>
+        <span class="time">${timeAgo(c.lastContact)}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (bdays.length) {
+    html += `<div class="card"><h3>🎂 Upcoming birthdays</h3>`;
+    bdays.forEach(c => {
+      const b = new Date(c.birthday);
+      html += `<div class="contact-row" onclick="openContact('${c.id}')">
+        ${avatarHtml(c.name)} <div class="contact-info"><strong>${c.name}</strong></div>
+        <span class="time">${b.toLocaleDateString("en-IN",{month:"short",day:"numeric"})}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById("view-dashboard").innerHTML = html;
+}
+
+function renderContacts() {
+  const tags = allTags();
+  let html = `<div class="toolbar">
+    <input placeholder="Search…" value="${searchQ}" oninput="searchQ=this.value;renderContacts()">
+    <select onchange="filterTag=this.value;renderContacts()">
+      <option value="all" ${filterTag==="all"?"selected":""}>All tags</option>
+      ${tags.map(t=>`<option value="${t}" ${filterTag===t?"selected":""}>${t}</option>`).join("")}
+    </select>
+    <select onchange="sortBy=this.value;renderContacts()">
+      <option value="name" ${sortBy==="name"?"selected":""}>Name</option>
+      <option value="recent" ${sortBy==="recent"?"selected":""}>Recent</option>
+      <option value="company" ${sortBy==="company"?"selected":""}>Company</option>
+    </select>
+    <button class="btn btn-primary" onclick="openAddContact()">+ Add contact</button>
+  </div>`;
+
+  let list = contacts.filter(c => {
+    const q = searchQ.toLowerCase();
+    const ms = !q || c.name.toLowerCase().includes(q) || (c.email||"").toLowerCase().includes(q) || (c.company||"").toLowerCase().includes(q);
+    const mt = filterTag==="all" || (c.tags||[]).includes(filterTag);
+    return ms && mt;
+  }).sort((a,b) => {
+    if (sortBy==="name") return a.name.localeCompare(b.name);
+    if (sortBy==="recent") return new Date(b.lastContact||0)-new Date(a.lastContact||0);
+    if (sortBy==="company") return (a.company||"").localeCompare(b.company||"");
+    return 0;
+  });
+
+  if (!list.length) { html += `<div class="empty">No contacts found.</div>`; }
+  else {
+    html += `<div class="card" style="padding:8px 16px">`;
+    list.forEach(c => {
+      html += `<div class="contact-row" onclick="openContact('${c.id}')">
+        ${avatarHtml(c.name)}
+        <div class="contact-info"><strong>${c.name}</strong><small>${c.role||""}${c.company?" · "+c.company:""}</small></div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${(c.tags||[]).map(tagHtml).join("")}</div>
+        <span class="time" style="margin-left:8px">${timeAgo(c.lastContact)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById("view-contacts").innerHTML = html;
+}
+
+function openContact(id) {
+  selectedId = id; confirmingDelete = false;
+  document.getElementById("view-contacts").style.display = "none";
+  document.getElementById("view-dashboard").style.display = "none";
+  document.getElementById("view-detail").style.display = "";
+  document.getElementById("nav-contacts").classList.add("active");
+  document.getElementById("nav-dashboard").classList.remove("active");
+  renderDetail();
+}
+
+function renderDetail() {
+  const c = contacts.find(x => x.id === selectedId);
+  if (!c) return;
+
+  let html = `<button class="back-btn" onclick="showView('contacts')">← Back</button>
+  <div class="card">
+    <div class="detail-header">
+      ${avatarHtml(c.name,52)}
+      <div style="flex:1">
+        <h2>${c.name}</h2>
+        <p>${c.role||""}${c.company?" · "+c.company:""}</p>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${(c.tags||[]).map(tagHtml).join("")}</div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn" onclick="openEditContact('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-danger" onclick="askDelete()">🗑</button>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-field"><small>Email</small><span>${c.email||"—"}</span></div>
+      <div class="detail-field"><small>Phone</small><span>${c.phone||"—"}</span></div>
+      <div class="detail-field"><small>Birthday</small><span>${formatBday(c.birthday)}</span></div>
+      <div class="detail-field"><small>Last contact</small><span>${timeAgo(c.lastContact)}</span></div>
+    </div>
+    ${c.notes ? `<div class="notes-box"><small>Notes</small><p>${c.notes}</p></div>` : ""}
+  </div>`;
+
+  if (confirmingDelete) {
+    html += `<div class="alert">Delete ${c.name}? This can't be undone.
+      <button class="btn btn-danger" onclick="deleteContact()" style="margin-left:auto">Delete</button>
+      <button class="btn" onclick="confirmingDelete=false;renderDetail()">Cancel</button>
+    </div>`;
+  }
+
+  html += `<div class="card">
+    <h3 style="display:flex;align-items:center;justify-content:space-between">
+      Interactions
+      <button class="btn" onclick="openInteraction('${c.id}')" style="font-size:12px;padding:4px 10px">+ Log</button>
+    </h3>`;
+
+  if (!c.interactions || !c.interactions.length) {
+    html += `<div class="empty" style="padding:20px 0">No interactions yet.</div>`;
+  } else {
+    c.interactions.forEach(i => {
+      html += `<div class="interaction">
+        <span class="itype">${i.type}</span>
+        <div class="itext"><strong>${i.note||"—"}</strong><small>${formatDate(i.date)}</small></div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  document.getElementById("view-detail").innerHTML = html;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add("show"); }
+function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+
+function openAddContact() {
+  document.getElementById("modal-contact-title").textContent = "Add contact";
+  ["name","email","phone","company","role","tags","notes","birthday"].forEach(f => {
+    const el = document.getElementById("f-"+f);
+    if (el) el.value = "";
+  });
+  document.getElementById("edit-id").value = "";
+  openModal("modal-contact");
+}
+
+function openEditContact(id) {
+  const c = contacts.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById("modal-contact-title").textContent = "Edit contact";
+  document.getElementById("edit-id").value = id;
+  document.getElementById("f-name").value = c.name||"";
+  document.getElementById("f-email").value = c.email||"";
+  document.getElementById("f-phone").value = c.phone||"";
+  document.getElementById("f-company").value = c.company||"";
+  document.getElementById("f-role").value = c.role||"";
+  document.getElementById("f-birthday").value = c.birthday||"";
+  document.getElementById("f-tags").value = (c.tags||[]).join(", ");
+  document.getElementById("f-notes").value = c.notes||"";
+  openModal("modal-contact");
+}
+
+function saveContact() {
+  const name = document.getElementById("f-name").value.trim();
+  if (!name) { alert("Name is required."); return; }
+  const id = document.getElementById("edit-id").value;
+  const data = {
+    name, email: document.getElementById("f-email").value.trim(),
+    phone: document.getElementById("f-phone").value.trim(),
+    company: document.getElementById("f-company").value.trim(),
+    role: document.getElementById("f-role").value.trim(),
+    birthday: document.getElementById("f-birthday").value,
+    tags: document.getElementById("f-tags").value.split(",").map(t=>t.trim().toLowerCase()).filter(Boolean),
+    notes: document.getElementById("f-notes").value.trim(),
+  };
+  if (id) {
+    contacts = contacts.map(c => c.id === id ? {...c,...data} : c);
+    if (selectedId === id) { closeModal("modal-contact"); renderDetail(); return; }
+  } else {
+    contacts.push({...data, id: Date.now().toString(), interactions:[], lastContact:null});
+  }
+  saveContacts(contacts);
+  closeModal("modal-contact");
+  if (currentView === "dashboard") renderDashboard();
+  else renderContacts();
+}
+
+function askDelete() { confirmingDelete = true; renderDetail(); }
+
+function deleteContact() {
+  contacts = contacts.filter(c => c.id !== selectedId);
+  saveContacts(contacts);
+  showView("contacts");
+}
+
+function openInteraction(id) {
+  document.getElementById("i-contact-id").value = id;
+  document.getElementById("i-type").value = "call";
+  document.getElementById("i-date").value = new Date().toISOString().split("T")[0];
+  document.getElementById("i-note").value = "";
+  openModal("modal-interaction");
+}
+
+function saveInteraction() {
+  const id = document.getElementById("i-contact-id").value;
+  const interaction = {
+    type: document.getElementById("i-type").value,
+    date: document.getElementById("i-date").value,
+    note: document.getElementById("i-note").value.trim(),
+  };
+  contacts = contacts.map(c => {
+    if (c.id !== id) return c;
+    return {...c, lastContact: interaction.date, interactions: [interaction, ...(c.interactions||[])]};
+  });
+  saveContacts(contacts);
+  closeModal("modal-interaction");
+  if (selectedId === id) renderDetail();
+}
+
+// Close modal on backdrop click
+document.querySelectorAll(".overlay").forEach(o => {
+  o.addEventListener("click", e => { if (e.target === o) o.classList.remove("show"); });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderDashboard();
+</script>
+</body>
+</html>
